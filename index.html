@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>System Kernel v6.0</title>
+    <title>System Kernel v7.0</title>
     <style>
-        :root { --blue: #0088cc; --glass: rgba(255, 255, 255, 0.03); }
+        :root { --blue: #0088cc; --glass: rgba(255, 255, 255, 0.05); }
         body {
             margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
             background: radial-gradient(circle at top right, #1e3a8a, #020617);
@@ -13,7 +13,7 @@
         .card {
             background: var(--glass); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
             border: 1px solid rgba(255,255,255,0.1); border-radius: 40px;
-            padding: 50px; width: 380px; text-align: center; box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+            padding: 50px; width: 380px; text-align: center; box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
         }
         .btn-init {
             width: 100%; padding: 18px; background: linear-gradient(135deg, var(--blue), #004466);
@@ -32,7 +32,7 @@
 </head>
 <body>
 
-<div class="card">
+<div class="card" id="main-card">
     <h2 id="title">SYSTEM SYNC</h2>
     <p id="status">Ожидание инициализации протокола...</p>
     
@@ -44,38 +44,34 @@
 </div>
 
 <script>
-    // СЮДА ПИШИ АЙДИ СВОЕГО БОТА (ТОЛЬКО ЦИФРЫ)
+    // 1. ВСТАВЬ АЙДИ БОТА (ЦИФРЫ)
     const botId = "8791295405"; 
 
-    function openAuth() {
-        const origin = window.location.origin;
-        // Параметр embed=1 и request_access=write обязательны для получения данных
-        const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${origin}&request_access=write&embed=1`;
+    // Функция проверки параметров в ссылке (срабатывает после редиректа)
+    function checkAuth() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const userStr = urlParams.get('tgAuthResult'); // Telegram иногда пакует в этот параметр
         
-        const authWindow = window.open(authUrl, "tg_auth", "width=500,height=600");
+        // Если данные пришли в строке запроса напрямую (стандарт OAuth)
+        if (urlParams.has('id')) {
+            const user = {
+                id: urlParams.get('id'),
+                first_name: urlParams.get('first_name'),
+                last_name: urlParams.get('last_name'),
+                username: urlParams.get('username'),
+                hash: urlParams.get('hash')
+            };
+            showData(user);
+        }
+    }
 
-        document.getElementById('btn').innerText = "ПЕРЕДАЧА ЗАПРОСА...";
-
-        // Слушаем сообщение от окна Telegram (так мы получим данные БЕЗ бэкенда)
-        window.addEventListener('message', function(event) {
-            if (event.origin === "https://oauth.telegram.org") {
-                const data = JSON.parse(event.data);
-                if (data.event === "auth_result") {
-                    showData(data.result);
-                }
-            }
-        });
-
-        // Запасной вариант: если окно просто закрыли
-        const timer = setInterval(() => {
-            if (authWindow.closed) {
-                clearInterval(timer);
-                if (document.getElementById('result-box').style.display !== 'block') {
-                    document.getElementById('status').innerText = "Ошибка: Авторизация прервана.";
-                    document.getElementById('btn').innerText = "ПОВТОРИТЬ";
-                }
-            }
-        }, 1000);
+    function openAuth() {
+        const origin = window.location.origin + window.location.pathname;
+        // Используем механизм прямой авторизации с возвратом на эту же страницу
+        const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${origin}&request_access=write`;
+        
+        // Перенаправляем ТЕКУЩУЮ вкладку (так надежнее всего для перехвата данных)
+        window.location.href = authUrl;
     }
 
     function showData(user) {
@@ -87,15 +83,20 @@
         const dataDiv = document.getElementById('user-data');
         box.style.display = 'block';
 
-        // Формируем вывод реальных данных
         dataDiv.innerHTML = `
             <span class="label">ID:</span> ${user.id}<br>
-            <span class="label">NAME:</span> ${user.first_name} ${user.last_name || ''}<br>
+            <span class="label">NAME:</span> ${decodeURIComponent(user.first_name)} ${decodeURIComponent(user.last_name || '')}<br>
             <span class="label">USERNAME:</span> @${user.username || 'n/a'}<br>
-            <span class="label">HASH:</span> ${user.hash.substring(0, 16)}...<br><br>
-            <span style="color: #4ade80;">> Протокол завершен успешно.</span>
+            <span class="label">HASH:</span> ${user.hash.substring(0, 12)}...<br><br>
+            <span style="color: #4ade80;">> Данные профиля синхронизированы.</span>
         `;
+        
+        // Очищаем URL от данных, чтобы не висели в строке
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    // Запускаем проверку при загрузке страницы
+    checkAuth();
 </script>
 
 </body>
