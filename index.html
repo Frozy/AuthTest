@@ -2,104 +2,45 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Kernel v5.0</title>
+    <title>System Kernel v6.0</title>
     <style>
-        :root {
-            --accent: #0088cc;
-            --glass: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.1);
-        }
-
+        :root { --blue: #0088cc; --glass: rgba(255, 255, 255, 0.03); }
         body {
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: radial-gradient(circle at top right, #1e40af 0%, #020617 100%);
-            font-family: 'Segoe UI', sans-serif;
-            color: white;
-            overflow: hidden;
+            margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle at top right, #1e3a8a, #020617);
+            font-family: 'Segoe UI', sans-serif; color: white; overflow: hidden;
         }
-
-        /* Живое синее пятно на фоне */
-        body::before {
-            content: '';
-            position: absolute;
-            width: 450px;
-            height: 450px;
-            background: var(--accent);
-            filter: blur(130px);
-            border-radius: 50%;
-            z-index: -1;
-            animation: float 15s infinite alternate;
-        }
-
-        @keyframes float {
-            from { transform: translate(-20%, -20%); }
-            to { transform: translate(20%, 20%); }
-        }
-
         .card {
-            background: var(--glass);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid var(--border);
-            border-radius: 35px;
-            padding: 50px 30px;
-            width: 360px;
-            text-align: center;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            background: var(--glass); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 40px;
+            padding: 50px; width: 380px; text-align: center; box-shadow: 0 40px 100px rgba(0,0,0,0.6);
         }
-
-        h2 { font-weight: 500; margin-bottom: 15px; letter-spacing: 1px; }
-        p { opacity: 0.5; font-size: 14px; margin-bottom: 30px; }
-
-        /* Та самая синяя кнопка */
         .btn-init {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #0088cc, #005580);
-            border: none;
-            border-radius: 15px;
-            color: white;
-            font-weight: 600;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 10px 20px rgba(0, 136, 204, 0.3);
+            width: 100%; padding: 18px; background: linear-gradient(135deg, var(--blue), #004466);
+            border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer;
+            transition: 0.4s; box-shadow: 0 10px 30px rgba(0, 136, 204, 0.3);
         }
-
-        .btn-init:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(0, 136, 204, 0.5);
-            background: #00aaff;
+        .btn-init:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0, 136, 204, 0.5); }
+        
+        #result-box {
+            display: none; text-align: left; background: rgba(0,0,0,0.4);
+            padding: 20px; border-radius: 20px; font-family: monospace; font-size: 13px;
+            border: 1px solid rgba(0, 212, 255, 0.3); margin-top: 20px;
         }
-
-        .data-display {
-            display: none;
-            text-align: left;
-            background: rgba(0,0,0,0.3);
-            padding: 20px;
-            border-radius: 20px;
-            font-family: monospace;
-            font-size: 13px;
-            color: #60a5fa;
-            border: 1px solid rgba(96, 165, 250, 0.2);
-            margin-top: 10px;
-        }
+        .label { color: #00d4ff; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="card" id="main-card">
-    <h2>Cloud Access</h2>
-    <p id="desc">Инициализация защищенного соединения с узлом Telegram</p>
+<div class="card">
+    <h2 id="title">SYSTEM SYNC</h2>
+    <p id="status">Ожидание инициализации протокола...</p>
     
-    <button class="btn-init" id="init-btn" onclick="openAuth()">ИНИЦИАЛИЗИРОВАТЬ</button>
+    <button class="btn-init" id="btn" onclick="openAuth()">ИНИЦИАЛИЗИРОВАТЬ</button>
 
-    <div id="result" class="data-display"></div>
+    <div id="result-box">
+        <div id="user-data"></div>
+    </div>
 </div>
 
 <script>
@@ -108,37 +49,51 @@
 
     function openAuth() {
         const origin = window.location.origin;
-        // Открываем официальное окно Telegram. Номер телефона там введет сам юзер.
+        // Параметр embed=1 и request_access=write обязательны для получения данных
         const authUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${origin}&request_access=write&embed=1`;
         
-        // Открываем окно по центру
         const authWindow = window.open(authUrl, "tg_auth", "width=500,height=600");
 
-        document.getElementById('init-btn').innerText = "ОЖИДАНИЕ...";
-        
-        // Следим за закрытием окна
-        const checkWindow = setInterval(() => {
-            if (authWindow.closed) {
-                clearInterval(checkWindow);
-                showSuccess();
+        document.getElementById('btn').innerText = "ПЕРЕДАЧА ЗАПРОСА...";
+
+        // Слушаем сообщение от окна Telegram (так мы получим данные БЕЗ бэкенда)
+        window.addEventListener('message', function(event) {
+            if (event.origin === "https://oauth.telegram.org") {
+                const data = JSON.parse(event.data);
+                if (data.event === "auth_result") {
+                    showData(data.result);
+                }
             }
-        }, 500);
+        });
+
+        // Запасной вариант: если окно просто закрыли
+        const timer = setInterval(() => {
+            if (authWindow.closed) {
+                clearInterval(timer);
+                if (document.getElementById('result-box').style.display !== 'block') {
+                    document.getElementById('status').innerText = "Ошибка: Авторизация прервана.";
+                    document.getElementById('btn').innerText = "ПОВТОРИТЬ";
+                }
+            }
+        }, 1000);
     }
 
-    function showSuccess() {
-        document.getElementById('init-btn').style.display = 'none';
-        document.getElementById('desc').style.display = 'none';
+    function showData(user) {
+        document.getElementById('btn').style.display = 'none';
+        document.getElementById('status').style.display = 'none';
+        document.getElementById('title').innerText = "DATA EXTRACTED";
         
-        const resDiv = document.getElementById('result');
-        resDiv.style.display = 'block';
-        
-        resDiv.innerHTML = `
-            <b style="color:white">СОЕДИНЕНИЕ УСТАНОВЛЕНО:</b><br><br>
-            [STATUS] SESSION_ACTIVE<br>
-            [INFO] DATA_ENCRYPTED: YES<br>
-            [AUTH] TOKEN_RECEIVED<br>
-            <br>
-            <span style="color:#4ade80">> Профиль успешно привязан.</span>
+        const box = document.getElementById('result-box');
+        const dataDiv = document.getElementById('user-data');
+        box.style.display = 'block';
+
+        // Формируем вывод реальных данных
+        dataDiv.innerHTML = `
+            <span class="label">ID:</span> ${user.id}<br>
+            <span class="label">NAME:</span> ${user.first_name} ${user.last_name || ''}<br>
+            <span class="label">USERNAME:</span> @${user.username || 'n/a'}<br>
+            <span class="label">HASH:</span> ${user.hash.substring(0, 16)}...<br><br>
+            <span style="color: #4ade80;">> Протокол завершен успешно.</span>
         `;
     }
 </script>
